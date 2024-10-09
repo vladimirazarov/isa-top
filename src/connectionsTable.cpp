@@ -102,9 +102,9 @@ void ConnectionsTable::printConnections() {
     std::lock_guard<std::mutex> lock(tableMutex);
     for (const auto& pair : connectionsTable) {
         std::cout << "Connection: " 
-                  << pair.first.getSrcEndPoint().sin6_addr.s6_addr << ":" << pair.first.getSrcPort()
+                  << pair.first.endpointToString(pair.first.m_srcEndPoint) << ":" << pair.first.getSrcPort()
                   << " -> " 
-                  << pair.first.getDestEndPoint().sin6_addr.s6_addr << ":" << pair.first.getDestPort()
+                  << pair.first.endpointToString(pair.first.m_destEndPoint) << ":" << pair.first.getDestPort()
                   << " Protocol: " << static_cast<int>(pair.first.getProtocol())
                   << " Bytes Transmitted: " << pair.second.m_bytesSent
                   << " Packets Transmitted: " << pair.second.m_packetsSent
