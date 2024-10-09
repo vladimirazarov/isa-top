@@ -3,30 +3,30 @@
 
 void ConnectionsTable::removeConnection(Connection connection)
 {
-    std::lock_guard<std::mutex> lock(tableMutex);
-    connectionsTable.erase(connection.m_ID);
+    std::lock_guard<std::mutex> lock(m_tableMutex);
+    m_connectionsTable.erase(connection.m_ID);
 }
 
 Connection *ConnectionsTable::getConnection(Connection connection)
 {
-    std::lock_guard<std::mutex> lock(tableMutex);
-    auto foundConnection = connectionsTable.find(connection.m_ID);
-    if (foundConnection != connectionsTable.end())
+    std::lock_guard<std::mutex> lock(m_tableMutex);
+    auto foundConnection = m_connectionsTable.find(connection.m_ID);
+    if (foundConnection != m_connectionsTable.end())
     {
         return &(foundConnection->second);
     }
     return nullptr;
 }
 
-void ConnectionsTable::updateConnection(const ConnectionID& id, bool isSending, uint64_t byteCount)
+void ConnectionsTable::updateConnection(const ConnectionID &id, bool isSending, uint64_t byteCount)
 {
-    std::lock_guard<std::mutex> lock(tableMutex);
+    std::lock_guard<std::mutex> lock(m_tableMutex);
 
-    auto currentConnection = connectionsTable.find(id);
+    auto currentConnection = m_connectionsTable.find(id);
 
-    if (currentConnection != connectionsTable.end())
+    if (currentConnection != m_connectionsTable.end())
     {
-        Connection& connection = currentConnection->second;
+        Connection &connection = currentConnection->second;
         connection.m_last_seen = std::chrono::system_clock::now();
 
         if (isSending)
@@ -73,16 +73,16 @@ void ConnectionsTable::updateConnection(const ConnectionID& id, bool isSending, 
             newConnection.m_packetsReceived = 1;
         }
 
-        connectionsTable.insert({id, newConnection});
+        m_connectionsTable.insert({id, newConnection});
     }
 }
 
 void ConnectionsTable::cleanupInactiveConnections(std::chrono::seconds timeout)
 {
-    std::lock_guard<std::mutex> lock(tableMutex);
+    std::lock_guard<std::mutex> lock(m_tableMutex);
     auto now = std::chrono::system_clock::now();
 
-    for (auto currentConnection = connectionsTable.begin(); currentConnection != connectionsTable.end(); )
+    for (auto currentConnection = m_connectionsTable.begin(); currentConnection != m_connectionsTable.end();)
     {
         if (now - currentConnection->second.m_last_seen > timeout)
         {
@@ -95,15 +95,14 @@ void ConnectionsTable::cleanupInactiveConnections(std::chrono::seconds timeout)
     }
 }
 
-
-// TODO: DELETE LATER
-// TODO: FIX IPv4 and IPv6 not displayed
-void ConnectionsTable::printConnections() {
-    std::lock_guard<std::mutex> lock(tableMutex);
-    for (const auto& pair : connectionsTable) {
-        std::cout << "Connection: " 
+void ConnectionsTable::printConnections(SortBy sortBy)
+{
+    std::lock_guard<std::mutex> lock(m_tableMutex);
+    for (const auto &pair : m_connectionsTable)
+    {
+        std::cout << "Connection: "
                   << pair.first.endpointToString(pair.first.m_srcEndPoint) << ":" << pair.first.getSrcPort()
-                  << " -> " 
+                  << " -> "
                   << pair.first.endpointToString(pair.first.m_destEndPoint) << ":" << pair.first.getDestPort()
                   << " Protocol: " << static_cast<int>(pair.first.getProtocol())
                   << " Bytes Transmitted: " << pair.second.m_bytesSent
@@ -114,3 +113,17 @@ void ConnectionsTable::printConnections() {
     }
 }
 
+void ConnectionsTable::calculateSpeed()
+{
+    std::lock_guard<std::mutex> lock(m_tableMutex);
+    for (auto &pair : m_connectionsTable)
+    {
+        Connection &current = pair.second;
+
+        current.m_rxSpeedBytes = static_cast<double>(current.m_bytesReceived - current.m_bytesReceivedBefore);
+        current.m_txSpeedBytes = static_cast<double>(current.m_bytesSent - current.m_bytesSentBefore);
+
+        current.m_bytesSentBefore = current.m_bytesSent;
+        current.m_bytesReceivedBefore = current.m_bytesReceived;
+    }
+}

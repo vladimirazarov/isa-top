@@ -17,22 +17,30 @@
 #include "connection.hpp"
 #include <iostream>
 
+enum SortBy{
+    BY_BYTES, 
+    BY_PACKETS
+};
 
 
 class ConnectionsTable
 {
 public:
-    std::unordered_map<ConnectionID, Connection, ConnectionIDHash> connectionsTable;
-    std::mutex tableMutex;
+    std::unordered_map<ConnectionID, Connection, ConnectionIDHash> m_connectionsTable;
+    std::mutex m_tableMutex;
 
     void removeConnection(Connection connection);
     Connection *getConnection(Connection connection);
+
     // txOrRx: 1 - update tx (src)
     //         2 - update rx  (dst)
     void updateConnection(const ConnectionID &id, bool txRx, uint64_t bytes);
     void cleanupInactiveConnections(std::chrono::seconds timeout);
+    void calculateSpeed();
 
+    void printConnections(SortBy sortBy);
 
-    void printConnections();
+    std::vector<std::pair<ConnectionID, Connection>> getSortedConnections(SortBy sortBy);
+    std::vector<std::pair<ConnectionID, Connection>> getTopConnections(SortBy sortBy, int num);
 
 };

@@ -36,6 +36,13 @@ public:
     unsigned long int m_packetsSent;
     unsigned long int m_packetsReceived;
 
+    unsigned long int m_bytesSentBefore;
+    unsigned long int m_bytesReceivedBefore;
+
+    double m_txSpeedBytes;
+    double m_rxSpeedBytes;
+
+
     std::chrono::system_clock::time_point m_first_seen;
     std::chrono::system_clock::time_point m_last_seen;
 
