@@ -26,6 +26,9 @@ enum SortBy{
 class ConnectionsTable
 {
 public:
+    // Connection table 1 sec before now
+    std::unordered_map<ConnectionID, Connection, ConnectionIDHash> m_connectionsTableBefore;
+    // Connection table right now
     std::unordered_map<ConnectionID, Connection, ConnectionIDHash> m_connectionsTable;
     std::mutex m_tableMutex;
 

@@ -36,8 +36,6 @@ public:
     unsigned long int m_packetsSent;
     unsigned long int m_packetsReceived;
 
-    unsigned long int m_bytesSentBefore;
-    unsigned long int m_bytesReceivedBefore;
 
     double m_txSpeedBytes;
     double m_rxSpeedBytes;

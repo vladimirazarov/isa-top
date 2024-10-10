@@ -86,7 +86,7 @@ void ConnectionsTable::cleanupInactiveConnections(std::chrono::seconds timeout)
     {
         if (now - currentConnection->second.m_last_seen > timeout)
         {
-            currentConnection = connectionsTable.erase(currentConnection);
+            currentConnection = m_connectionsTable.erase(currentConnection);
         }
         else
         {
@@ -118,12 +118,24 @@ void ConnectionsTable::calculateSpeed()
     std::lock_guard<std::mutex> lock(m_tableMutex);
     for (auto &pair : m_connectionsTable)
     {
+        const ConnectionID &connectionID = pair.first; 
         Connection &current = pair.second;
 
-        current.m_rxSpeedBytes = static_cast<double>(current.m_bytesReceived - current.m_bytesReceivedBefore);
-        current.m_txSpeedBytes = static_cast<double>(current.m_bytesSent - current.m_bytesSentBefore);
+        auto before = m_connectionsTableBefore.find(connectionID);  
+        if (before != m_connectionsTableBefore.end())
+        {
+        Connection &connectionBefore = before->second;
 
-        current.m_bytesSentBefore = current.m_bytesSent;
-        current.m_bytesReceivedBefore = current.m_bytesReceived;
+        current.m_rxSpeedBytes = static_cast<double>(current.m_bytesReceived - connectionBefore.m_bytesReceived);
+        current.m_txSpeedBytes = static_cast<double>(current.m_bytesSent - connectionBefore.m_bytesSent);
+
+        }
+        else
+        {
+            current.m_rxSpeedBytes = 0;
+            current.m_txSpeedBytes = 0;
+        }
+
+        m_connectionsTableBefore[connectionID] = current;
     }
 }
