@@ -37,8 +37,11 @@ public:
     unsigned long int m_packetsReceived;
 
 
-    double m_txSpeedBytes;
     double m_rxSpeedBytes;
+    double m_txSpeedBytes;
+
+    double m_rxSpeedPackets;
+    double m_txSpeedPackets;
 
 
     std::chrono::system_clock::time_point m_first_seen;

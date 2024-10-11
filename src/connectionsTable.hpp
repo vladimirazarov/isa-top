@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <algorithm>
 #include <string>
 #include <chrono>
 #include <sys/socket.h>
@@ -38,12 +39,10 @@ public:
     // txOrRx: 1 - update tx (src)
     //         2 - update rx  (dst)
     void updateConnection(const ConnectionID &id, bool txRx, uint64_t bytes);
-    void cleanupInactiveConnections(std::chrono::seconds timeout);
     void calculateSpeed();
 
     void printConnections(SortBy sortBy);
 
-    std::vector<std::pair<ConnectionID, Connection>> getSortedConnections(SortBy sortBy);
-    std::vector<std::pair<ConnectionID, Connection>> getTopConnections(SortBy sortBy, int num);
-
+    std::vector <Connection> getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector);
+    // std::vector<std::pair<ConnectionID, Connection>> getTopConnections(SortBy sortBy, int num);
 };
