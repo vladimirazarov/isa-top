@@ -44,5 +44,5 @@ public:
     void printConnections(SortBy sortBy);
 
     std::vector <Connection> getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector);
-    // std::vector<std::pair<ConnectionID, Connection>> getTopConnections(SortBy sortBy, int num);
+    void getTopConnections(int num, std::vector <Connection> &connectionsSorted);
 };
