@@ -17,7 +17,6 @@ Connection::Connection()
 {
     m_ipFamily = IPv4;
     m_bytesSent = m_bytesReceived = m_packetsSent = m_packetsReceived = 0;
-    m_bytesSentBefore = m_bytesReceivedBefore = m_packetsSentBefore = m_packetsReceivedBefore = 0;
     m_rxSpeedBytes= m_txSpeedBytes= m_rxSpeedPackets= m_txSpeedPackets = 0;
     m_first_seen = std::chrono::system_clock::now();
     m_last_seen = std::chrono::system_clock::now();

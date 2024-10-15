@@ -1,8 +1,4 @@
 #include "display.hpp"
-#include <chrono>
-#include <thread>
-#include <iomanip>
-#include "connection.hpp"
 
 Display::Display(ConnectionsTable &connectionsTable, SortBy sortBy, int updateInterval) : m_connectionsTable(connectionsTable)
 {
@@ -44,7 +40,7 @@ void Display::update()
     refresh();
 }
 
-std::string protocolToStr(Protocol protocol)
+std::string Display::protocolToStr(Protocol protocol)
 {
     switch (protocol)
     {
@@ -63,10 +59,10 @@ std::string protocolToStr(Protocol protocol)
         break;
     }
 }
-void printConnection(int row, const Connection &connection)
+void Display::printConnection(int row, Connection &connection)
 {
-    std::string srcIPfull = ConnectionID::endpointToString(connection.m_ID.getSrcEndPoint()) + ":" + std::to_string(connection.m_ID.getSrcPort());
-    std::string destIPfull = ConnectionID::endpointToString(connection.m_ID.getDestEndPoint()) + ":" + std::to_string(connection.m_ID.getDestPort());
+    std::string srcIPfull = ConnectionID::endpointToString(connection.m_ID.getSrcEndPoint());
+    std::string destIPfull = ConnectionID::endpointToString(connection.m_ID.getDestEndPoint());
     std::string protocol;
 
     mvprintw(row + 1, 0, "%-30s %-30s %-8s %-15s %-15s %-15s %-15s",
@@ -83,7 +79,7 @@ void printConnection(int row, const Connection &connection)
 }
 
 
-std::string formatTraffic(double bytes)
+std::string Display::formatTraffic(double bytes)
 {
     const char *units[] = {"B", "K", "M", "G", "T"};
     double size = bytes;
@@ -98,4 +94,18 @@ std::string formatTraffic(double bytes)
     std::ostringstream oss;
     oss << std::fixed << std::setprecision(1) << size << units[unitIndex];
     return oss.str();
+}
+
+void Display::run()
+{
+    init();
+
+    while (true)
+    {
+        update();
+
+        std::this_thread::sleep_for(std::chrono::seconds(m_updateInterval));
+    }
+
+    endwin();
 }

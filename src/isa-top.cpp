@@ -10,51 +10,44 @@
 #include "packet.hpp"
 #include "connectionsTable.hpp"
 #include <csignal>
+#include "cli.hpp"
+#include <thread>
 
 ConnectionsTable* globalConnectionsTable = nullptr;
 
 void signalHandler(int signum) {
+    //TODO: call destr
+    endwin();
     exit(signum);
 }
 
-#define USAGE_MESSAGE "\
-Usage:  isa-top [OPTIONS] ... [ARGUMENTS] ... \
-\
-Options: \
-    -h,         Display this help message and exit \
-    -i <arg>,   The network interface for app to listen on \
-    -s <arg>,   Sort the output by bytes or packets, <arg> is b or p accordingly"
 
-
-
-void run(PacketCapture& pc, Display& display, int updateInterval) {
-    while (true) {
-        std::this_thread::sleep_for(std::chrono::seconds(updateInterval));
-        display.update();
-        if (getch() == 'q') { // Allow quitting with 'q'
-            pc.stopCapture();
-            break;
-        }
-    }
+void runCapture(PacketCapture& pc) {
+    pc.startCapture();
 }
 
+void runDisplay(Display& display, int updateInterval) {
+    display.run();
+}
+
+
 int main(int argc, char *argv[]) {
-    ArgumentParser ap(argc, argv);
-    ap.validateRetrieveArgs();
+    CommandLineInterface cli(argc, argv);
+    cli.validateRetrieveArgs();
 
     ConnectionsTable ct;
     globalConnectionsTable = &ct;
 
     std::signal(SIGINT, signalHandler);
 
-    PacketCapture pc(ap.m_interface, *globalConnectionsTable);
-    
-    Display display(*globalConnectionsTable, ap.m_sortBy, 1); 
-    display.run();
+    PacketCapture pc(cli.m_interface, *globalConnectionsTable);
+    Display display(*globalConnectionsTable, cli.m_sortBy, 1); 
 
-    pc.startCapture();
+    std::thread captureThread(runCapture, std::ref(pc));
+    std::thread displayThread(runDisplay, std::ref(display), 1);
 
-    run(pc, display, 1); 
+    captureThread.join();
+    displayThread.join();
 
     return 0;
 }

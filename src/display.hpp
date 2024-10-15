@@ -5,6 +5,12 @@
 #include "connectionID.hpp"
 #include <ncurses.h>
 #include <string>
+#include <vector>
+#include "display.hpp"
+#include <chrono>
+#include <thread>
+#include <iomanip>
+#include "connection.hpp"
 
 class Display{
     public:
@@ -12,7 +18,6 @@ class Display{
         ~Display();
 
         void run();
-    private:
         ConnectionsTable &m_connectionsTable;
         SortBy m_sortBy;
         int m_updateInterval;
@@ -21,4 +26,5 @@ class Display{
         void kill();
         void update();
         std::string protocolToStr(Protocol protocol);
+        std::string formatTraffic(double bytes);
 };

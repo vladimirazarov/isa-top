@@ -76,10 +76,17 @@ std::size_t ConnectionIDHash::operator()(const ConnectionID& connection) const {
     return std::hash<std::string>{}(key);
 }
 
-//TODO: Fix for ipv4 
 std::string ConnectionID::endpointToString(const sockaddr_in6& endpoint) {
     char ipStr[INET6_ADDRSTRLEN];
-    inet_ntop(AF_INET6, &endpoint.sin6_addr, ipStr, sizeof(ipStr));
+
+    if (IN6_IS_ADDR_V4MAPPED(&endpoint.sin6_addr)) {
+        struct in_addr ipv4Addr;
+        std::memcpy(&ipv4Addr, &endpoint.sin6_addr.s6_addr[12], sizeof(ipv4Addr));
+        inet_ntop(AF_INET, &ipv4Addr, ipStr, sizeof(ipStr)); 
+    } else {
+        inet_ntop(AF_INET6, &endpoint.sin6_addr, ipStr, sizeof(ipStr)); 
+    }
+    
     uint16_t port = ntohs(endpoint.sin6_port);
 
     std::ostringstream oss;

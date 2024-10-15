@@ -49,4 +49,6 @@ public:
 
     Connection(sockaddr_in6 srcEndPoint, sockaddr_in6 destEndPoint, IPFamily ipFamily, Protocol protocol);
     Connection();
+
+  
 };
