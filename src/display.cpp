@@ -1,0 +1,101 @@
+#include "display.hpp"
+#include <chrono>
+#include <thread>
+#include <iomanip>
+#include "connection.hpp"
+
+Display::Display(ConnectionsTable &connectionsTable, SortBy sortBy, int updateInterval) : m_connectionsTable(connectionsTable)
+{
+    m_sortBy = sortBy;
+    m_updateInterval = updateInterval;
+};
+Display::~Display()
+{
+    endwin();
+}
+void Display::init()
+{
+    initscr();
+    cbreak();
+    noecho();
+    curs_set(0);
+    nodelay(stdscr, TRUE);
+    keypad(stdscr, TRUE);
+
+}
+void Display::update()
+{
+    int maxR, maxC;
+    getmaxyx(stdscr, maxR, maxC);
+
+    clear();
+    // Print header
+    mvprintw(0, 0, "%-30s %-30s %-8s %-15s %-15s %-15s %-15s",
+             "Src IP:Port", "Dst IP:Port", "Proto", "Rx (b/s)", "Rx (p/s)", "Tx (b/s)", "Tx (p/s)");
+    mvhline(1, 0, '-', 120);
+    std::vector<Connection> connections;
+    m_connectionsTable.getSortedConnections(m_sortBy, connections);
+    m_connectionsTable.getTopConnections(10, connections);
+    int row = 2;
+    for (auto current = connections.begin(); current != connections.end(); current++)
+    {
+        printConnection(row++, *current);
+    }
+    refresh();
+}
+
+std::string protocolToStr(Protocol protocol)
+{
+    switch (protocol)
+    {
+    case Protocol::TCP:
+        return "tcp";
+        break;
+
+    case Protocol::UDP:
+        return "udp";
+        break;
+    case Protocol::ICMP:
+        return "icmp";
+        break;
+    case Protocol::ICMPv6:
+        return "icmpv6";
+        break;
+    }
+}
+void printConnection(int row, const Connection &connection)
+{
+    std::string srcIPfull = ConnectionID::endpointToString(connection.m_ID.getSrcEndPoint()) + ":" + std::to_string(connection.m_ID.getSrcPort());
+    std::string destIPfull = ConnectionID::endpointToString(connection.m_ID.getDestEndPoint()) + ":" + std::to_string(connection.m_ID.getDestPort());
+    std::string protocol;
+
+    mvprintw(row + 1, 0, "%-30s %-30s %-8s %-15s %-15s %-15s %-15s",
+             srcIPfull.c_str(),
+             destIPfull.c_str(),
+
+             protocolToStr(connection.m_ID.m_protocol).c_str(),
+
+             formatTraffic(connection.m_rxSpeedBytes).c_str(),
+             formatTraffic(connection.m_rxSpeedPackets).c_str(),
+             formatTraffic(connection.m_txSpeedBytes).c_str(),
+             formatTraffic(connection.m_txSpeedPackets).c_str()
+    );
+}
+
+
+std::string formatTraffic(double bytes)
+{
+    const char *units[] = {"B", "K", "M", "G", "T"};
+    double size = bytes;
+    int unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < 4)
+    {
+        size /= 1024;
+        unitIndex++;
+    }
+
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(1) << size << units[unitIndex];
+    return oss.str();
+}

@@ -41,8 +41,7 @@ public:
     void updateConnection(const ConnectionID &id, bool txRx, uint64_t bytes);
     void calculateSpeed();
 
-    void printConnections(SortBy sortBy);
-
-    std::vector <Connection> getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector);
+    void getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector);
     void getTopConnections(int num, std::vector <Connection> &connectionsSorted);
+
 };

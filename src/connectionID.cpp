@@ -76,6 +76,7 @@ std::size_t ConnectionIDHash::operator()(const ConnectionID& connection) const {
     return std::hash<std::string>{}(key);
 }
 
+//TODO: Fix for ipv4 
 std::string ConnectionID::endpointToString(const sockaddr_in6& endpoint) {
     char ipStr[INET6_ADDRSTRLEN];
     inet_ntop(AF_INET6, &endpoint.sin6_addr, ipStr, sizeof(ipStr));

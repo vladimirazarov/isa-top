@@ -77,24 +77,6 @@ void ConnectionsTable::updateConnection(const ConnectionID &id, bool isSending, 
     }
 }
 
-void ConnectionsTable::printConnections(SortBy sortBy)
-{
-    std::lock_guard<std::mutex> lock(m_tableMutex);
-    for (const auto &pair : m_connectionsTable)
-    {
-        std::cout << "Connection: "
-                  << pair.first.endpointToString(pair.first.m_srcEndPoint) << ":" << pair.first.getSrcPort()
-                  << " -> "
-                  << pair.first.endpointToString(pair.first.m_destEndPoint) << ":" << pair.first.getDestPort()
-                  << " Protocol: " << static_cast<int>(pair.first.getProtocol())
-                  << " Bytes Transmitted: " << pair.second.m_bytesSent
-                  << " Packets Transmitted: " << pair.second.m_packetsSent
-                  << " Bytes Received: " << pair.second.m_bytesReceived
-                  << " Packets Received: " << pair.second.m_packetsReceived
-                  << std::endl;
-    }
-}
-
 void ConnectionsTable::calculateSpeed()
 {
     std::lock_guard<std::mutex> lock(m_tableMutex);
@@ -139,7 +121,7 @@ void ConnectionsTable::calculateSpeed()
     }
 }
 
-std::vector<Connection> ConnectionsTable::getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector)
+void ConnectionsTable::getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector)
 {
     std::lock_guard<std::mutex> lock(m_tableMutex);
     std::vector<std::pair<ConnectionID, Connection>> connections(m_connectionsTable.begin(), m_connectionsTable.end());
@@ -162,7 +144,6 @@ std::vector<Connection> ConnectionsTable::getSortedConnections(SortBy sortBy, st
         outputVector.push_back(current->second);
     }
 
-    return outputVector;
 }
 
 void ConnectionsTable::getTopConnections(int num, std::vector<Connection> &connectionsSorted)
