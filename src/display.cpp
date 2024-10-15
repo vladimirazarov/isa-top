@@ -29,6 +29,8 @@ void Display::update()
     mvprintw(0, 0, "%-30s %-30s %-8s %-15s %-15s %-15s %-15s",
              "Src IP:Port", "Dst IP:Port", "Proto", "Rx (b/s)", "Rx (p/s)", "Tx (b/s)", "Tx (p/s)");
     mvhline(1, 0, '-', 120);
+    m_connectionsTable.calculateSpeed();
+
     std::vector<Connection> connections;
     m_connectionsTable.getSortedConnections(m_sortBy, connections);
     m_connectionsTable.getTopConnections(10, connections);
