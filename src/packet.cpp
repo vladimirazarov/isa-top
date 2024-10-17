@@ -14,6 +14,7 @@
 #include "connectionID.hpp"
 #include "connection.hpp"
 
+
 PacketCapture::PacketCapture(std::string interfaceName, ConnectionsTable &connectionsTable) : m_connectionsTable(connectionsTable)
 {
     m_pcapHandle = nullptr;
@@ -26,22 +27,17 @@ PacketCapture::~PacketCapture()
     stopCapture();
 }
 void PacketCapture::initLocalAddresses(){
-// Interfaces 
 struct ifaddrs *ifaddr;
-// Get local IP addresses for each interface
 if (getifaddrs(&ifaddr) == -1)
 {
     std::cerr << "Couldn't retrieve interfaces local addresses" << std::endl;
     exit(EXIT_FAILURE);
 }
 
-// Fill up vectors localIPv4Addresses and localIPv6Addresses 
 for (struct ifaddrs* ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
-        // No address
         if (!ifa->ifa_addr)
             continue;
 
-        // Only 1 specific interface is needed
         if (std::string(ifa->ifa_name) != m_interfaceName)
             continue;
 

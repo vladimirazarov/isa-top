@@ -47,17 +47,17 @@ std::string Display::protocolToStr(Protocol protocol)
     switch (protocol)
     {
     case Protocol::TCP:
-        return "tcp";
+        return "TCP";
         break;
 
     case Protocol::UDP:
-        return "udp";
+        return "UDP";
         break;
     case Protocol::ICMP:
-        return "icmp";
+        return "ICMP";
         break;
     case Protocol::ICMPv6:
-        return "icmpv6";
+        return "ICMPv6";
         break;
     }
 }

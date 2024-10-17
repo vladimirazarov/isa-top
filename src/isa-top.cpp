@@ -12,6 +12,8 @@
 #include <csignal>
 #include "cli.hpp"
 #include <thread>
+#include <fstream>
+#include <memory>
 
 ConnectionsTable* globalConnectionsTable = nullptr;
 
@@ -40,14 +42,30 @@ int main(int argc, char *argv[]) {
 
     std::signal(SIGINT, signalHandler);
 
-    PacketCapture pc(cli.m_interface, *globalConnectionsTable);
-    Display display(*globalConnectionsTable, cli.m_sortBy, 1); 
+    std::shared_ptr<std::ofstream> logFileStream;
+
+    if (!cli.m_logFilePath.empty()) {
+        logFileStream = std::make_shared<std::ofstream>(cli.m_logFilePath, std::ios::out);
+        if (!logFileStream->is_open()) {
+            std::cerr << "Error opening log file: " << cli.m_logFilePath << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    PacketCapture pc(cli.m_interface, ct);
+    Display display(ct, cli.m_sortBy, 1);
+
+    ct.setLogFileStream(logFileStream);
 
     std::thread captureThread(runCapture, std::ref(pc));
     std::thread displayThread(runDisplay, std::ref(display), 1);
 
     captureThread.join();
     displayThread.join();
+
+    if (logFileStream && logFileStream->is_open()) {
+        logFileStream->close();
+    }
 
     return 0;
 }

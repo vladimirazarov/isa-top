@@ -1,5 +1,6 @@
 #include "connectionsTable.hpp"
 #include "connectionID.hpp"
+#include "display.hpp"
 
 void ConnectionsTable::removeConnection(Connection connection)
 {
@@ -75,6 +76,7 @@ void ConnectionsTable::updateConnection(const ConnectionID &id, bool isSending, 
 
         m_connectionsTable.insert({id, newConnection});
     }
+    logConnectionUpdate(id);
 }
 
 void ConnectionsTable::calculateSpeed()
@@ -87,6 +89,7 @@ void ConnectionsTable::calculateSpeed()
         const ConnectionID &connectionID = pair.first;
         Connection &current = pair.second;
 
+        // Find the previous state
         auto before = m_connectionsTableBefore.find(connectionID);
         if (before != m_connectionsTableBefore.end())
         {
@@ -142,11 +145,12 @@ void ConnectionsTable::getSortedConnections(SortBy sortBy, std::vector<Connectio
     {
         std::sort(connections.begin(), connections.end(), [](const std::pair<ConnectionID, Connection> &first, const std::pair<ConnectionID, Connection> &second)
                   { return (first.second.m_bytesReceived + first.second.m_bytesSent) > (second.second.m_bytesReceived + second.second.m_bytesSent); });
+                  { return (first.second.m_bytesReceived + first.second.m_bytesSent) > (second.second.m_bytesReceived + second.second.m_bytesSent); });
     }
-
-    if (sortBy == SortBy::BY_PACKETS)
+    else if (sortBy == SortBy::BY_PACKETS)
     {
         std::sort(connections.begin(), connections.end(), [](const std::pair<ConnectionID, Connection> &first, const std::pair<ConnectionID, Connection> &second)
+                  { return (first.second.m_packetsReceived + first.second.m_packetsSent) > (second.second.m_packetsReceived + second.second.m_packetsSent); });
                   { return (first.second.m_packetsReceived + first.second.m_packetsSent) > (second.second.m_packetsReceived + second.second.m_packetsSent); });
     }
 
@@ -157,12 +161,64 @@ void ConnectionsTable::getSortedConnections(SortBy sortBy, std::vector<Connectio
     }
 }
 
-
-void ConnectionsTable::getTopConnections(int num, std::vector<Connection> &connectionsSorted)
+void ConnectionsTable::getTopConnections(unsigned int num, std::vector<Connection> &connectionsSorted)
 {
-    if (num > connectionsSorted.size()) {
+    if (num > connectionsSorted.size())
+    {
         return;
     }
 
     connectionsSorted.resize(num);
+}
+
+void ConnectionsTable::setLogFileStream(std::shared_ptr<std::ofstream> logFileStream) {
+    m_logFileStream = logFileStream;
+
+    if (m_logFileStream && m_logFileStream->is_open()) {
+        std::lock_guard<std::mutex> lock(m_logMutex);
+        *m_logFileStream << "timestamp,protocol,src_ip,src_port,dst_ip,dst_port,bytes_sent,bytes_received,packets_sent,packets_received\n";
+    }
+}
+
+void ConnectionsTable::logConnectionUpdate(const ConnectionID &id) {
+    if (m_logFileStream && m_logFileStream->is_open()) {
+        std::lock_guard<std::mutex> lock(m_logMutex);
+
+        const Connection &connection = m_connectionsTable[id];
+        auto timestamp = std::chrono::system_clock::to_time_t(connection.m_last_seen);
+
+        std::string srcEndpoint = ConnectionID::endpointToString(connection.m_ID.getSrcEndPoint());
+        std::string destEndpoint = ConnectionID::endpointToString(connection.m_ID.getDestEndPoint());
+        std::string protocol = Display::protocolToStr(connection.m_ID.getProtocol());
+
+        std::string srcIP, srcPortStr, destIP, destPortStr;
+        parseEndpoint(srcEndpoint, srcIP, srcPortStr);
+        parseEndpoint(destEndpoint, destIP, destPortStr);
+
+        uint16_t srcPort = std::stoi(srcPortStr);
+        uint16_t destPort = std::stoi(destPortStr);
+
+        *m_logFileStream << timestamp << ","
+                         << protocol << ","
+                         << srcIP << ","
+                         << srcPort << ","
+                         << destIP << ","
+                         << destPort << ","
+                         << connection.m_bytesSent << ","
+                         << connection.m_bytesReceived << ","
+                         << connection.m_packetsSent << ","
+                         << connection.m_packetsReceived << "\n";
+    m_logFileStream->flush();
+    }
+}
+
+void ConnectionsTable::parseEndpoint(const std::string &endpoint, std::string &ip, std::string &port) {
+    size_t colonPos = endpoint.find_last_of(':');
+    if (colonPos != std::string::npos) {
+        ip = endpoint.substr(0, colonPos);
+        port = endpoint.substr(colonPos + 1);
+    } else {
+        ip = endpoint;
+        port = "0";
+    }
 }
