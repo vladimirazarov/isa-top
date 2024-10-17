@@ -145,12 +145,10 @@ void ConnectionsTable::getSortedConnections(SortBy sortBy, std::vector<Connectio
     {
         std::sort(connections.begin(), connections.end(), [](const std::pair<ConnectionID, Connection> &first, const std::pair<ConnectionID, Connection> &second)
                   { return (first.second.m_bytesReceived + first.second.m_bytesSent) > (second.second.m_bytesReceived + second.second.m_bytesSent); });
-                  { return (first.second.m_bytesReceived + first.second.m_bytesSent) > (second.second.m_bytesReceived + second.second.m_bytesSent); });
     }
     else if (sortBy == SortBy::BY_PACKETS)
     {
         std::sort(connections.begin(), connections.end(), [](const std::pair<ConnectionID, Connection> &first, const std::pair<ConnectionID, Connection> &second)
-                  { return (first.second.m_packetsReceived + first.second.m_packetsSent) > (second.second.m_packetsReceived + second.second.m_packetsSent); });
                   { return (first.second.m_packetsReceived + first.second.m_packetsSent) > (second.second.m_packetsReceived + second.second.m_packetsSent); });
     }
 
