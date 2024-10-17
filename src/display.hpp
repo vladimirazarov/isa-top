@@ -25,6 +25,6 @@ class Display{
         void init();
         void kill();
         void update();
-        std::string protocolToStr(Protocol protocol);
+        static std::string protocolToStr(Protocol protocol);
         std::string formatTraffic(double bytes);
 };

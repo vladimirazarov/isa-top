@@ -9,10 +9,9 @@ CommandLineInterface::CommandLineInterface(int argc, char *argv[])
     }
 };
 
-//  Method to validate and retrieve arguments
 void CommandLineInterface::validateRetrieveArgs()
 {
-    if (m_argc > 5 || m_argc < 3)
+    if (m_argc > 7 || m_argc < 3)
     {
         std::cerr << USAGE_MESSAGE << std::endl;
         exit(EXIT_FAILURE);
@@ -37,6 +36,18 @@ void CommandLineInterface::validateRetrieveArgs()
                 exit(EXIT_FAILURE);
             }
             i++;
+        }
+        else if (m_argv[i] == "-l" || m_argv[i] == "--log")
+        {
+            if (i + 1 < m_argc)
+            {
+                m_logFilePath = m_argv[++i];
+            }
+            else
+            {
+                std::cerr << USAGE_MESSAGE << std::endl;
+                exit(EXIT_FAILURE);
+            }
         }
         else
         {

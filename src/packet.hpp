@@ -13,7 +13,6 @@ public:
     void startCapture();
     void stopCapture();
 
-private:
     static void packetHandler(unsigned char *packetCaptureObject, const struct pcap_pkthdr* pkthdr, const unsigned char* packet);
 
     std::string m_interfaceName;

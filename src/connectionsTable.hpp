@@ -17,6 +17,8 @@
 #include "connectionID.hpp"
 #include "connection.hpp"
 #include <iostream>
+#include <memory>
+#include <fstream>
 
 enum SortBy{
     BY_BYTES, 
@@ -42,6 +44,12 @@ public:
     void calculateSpeed();
 
     void getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector);
-    void getTopConnections(int num, std::vector <Connection> &connectionsSorted);
+    void getTopConnections(unsigned int num, std::vector <Connection> &connectionsSorted);
+
+    void setLogFileStream(std::shared_ptr<std::ofstream> logFileStream);
+    void logConnectionUpdate(const ConnectionID &id);
+    void parseEndpoint(const std::string &endpoint, std::string &ip, std::string &port);
+    std::shared_ptr<std::ofstream> m_logFileStream; 
+    std::mutex m_logMutex;
 
 };
