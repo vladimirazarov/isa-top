@@ -87,11 +87,18 @@ std::string Display::formatTraffic(double bytes)
     double size = bytes;
     int unitIndex = 0;
 
+    if (size < 1 && size > 0) {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(2) << size << "B";  
+        return oss.str();
+    }
+
     while (size >= 1024 && unitIndex < 4)
     {
         size /= 1024;
         unitIndex++;
     }
+
 
     std::ostringstream oss;
     oss << std::fixed << std::setprecision(1) << size << units[unitIndex];
