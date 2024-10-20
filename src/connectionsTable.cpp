@@ -76,7 +76,6 @@ void ConnectionsTable::updateConnection(const ConnectionID &id, bool isSending, 
 
         m_connectionsTable.insert({id, newConnection});
     }
-    logConnectionUpdate(id);
 }
 
 void ConnectionsTable::calculateSpeed()
@@ -96,13 +95,16 @@ void ConnectionsTable::calculateSpeed()
             Connection &connectionBefore = before->second;
 
             double timeDeltaSeconds = std::chrono::duration_cast<std::chrono::seconds>(now - connectionBefore.m_last_seen).count();
-            if (timeDeltaSeconds > 0) {
+            if (timeDeltaSeconds > 0)
+            {
                 current.m_rxSpeedBytes = (current.m_bytesReceived - connectionBefore.m_bytesReceived) / timeDeltaSeconds;
                 current.m_txSpeedBytes = (current.m_bytesSent - connectionBefore.m_bytesSent) / timeDeltaSeconds;
 
                 current.m_rxSpeedPackets = (current.m_packetsReceived - connectionBefore.m_packetsReceived) / timeDeltaSeconds;
                 current.m_txSpeedPackets = (current.m_packetsSent - connectionBefore.m_packetsSent) / timeDeltaSeconds;
-            } else {
+            }
+            else
+            {
                 current.m_rxSpeedBytes = 0;
                 current.m_txSpeedBytes = 0;
                 current.m_rxSpeedPackets = 0;
@@ -133,7 +135,6 @@ void ConnectionsTable::calculateSpeed()
         }
     }
 }
-
 
 void ConnectionsTable::getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector)
 {
@@ -169,54 +170,92 @@ void ConnectionsTable::getTopConnections(unsigned int num, std::vector<Connectio
     connectionsSorted.resize(num);
 }
 
-void ConnectionsTable::setLogFileStream(std::shared_ptr<std::ofstream> logFileStream) {
-    m_logFileStream = logFileStream;
-
-    if (m_logFileStream && m_logFileStream->is_open()) {
+void ConnectionsTable::setLogFileStream()
+{
+    if (!m_logFilePath.empty())
+    {
         std::lock_guard<std::mutex> lock(m_logMutex);
-        *m_logFileStream << "timestamp,protocol,src_ip,src_port,dst_ip,dst_port,bytes_sent,bytes_received,packets_sent,packets_received\n";
+
+        m_logFileStream = std::make_shared<std::ofstream>(m_logFilePath, std::ios::out | std::ios::trunc);
+
+        if (!m_logFileStream->is_open())
+        {
+            exit(EXIT_FAILURE);
+        }
+        else
+        {
+            *m_logFileStream << "timestamp,protocol,src_ip,src_port,dst_ip,dst_port,bytes_sent,bytes_received,packets_sent,packets_received\n";
+            m_logFileStream->flush(); 
+        }
+    }
+    else
+    {
     }
 }
 
-void ConnectionsTable::logConnectionUpdate(const ConnectionID &id) {
-    if (m_logFileStream && m_logFileStream->is_open()) {
-        std::lock_guard<std::mutex> lock(m_logMutex);
-
-        const Connection &connection = m_connectionsTable[id];
-        auto timestamp = std::chrono::system_clock::to_time_t(connection.m_last_seen);
-
-        std::string srcEndpoint = ConnectionID::endpointToString(connection.m_ID.getSrcEndPoint());
-        std::string destEndpoint = ConnectionID::endpointToString(connection.m_ID.getDestEndPoint());
-        std::string protocol = Display::protocolToStr(connection.m_ID.getProtocol());
-
-        std::string srcIP, srcPortStr, destIP, destPortStr;
-        parseEndpoint(srcEndpoint, srcIP, srcPortStr);
-        parseEndpoint(destEndpoint, destIP, destPortStr);
-
-        uint16_t srcPort = std::stoi(srcPortStr);
-        uint16_t destPort = std::stoi(destPortStr);
-
-        *m_logFileStream << timestamp << ","
-                         << protocol << ","
-                         << srcIP << ","
-                         << srcPort << ","
-                         << destIP << ","
-                         << destPort << ","
-                         << connection.m_bytesSent << ","
-                         << connection.m_bytesReceived << ","
-                         << connection.m_packetsSent << ","
-                         << connection.m_packetsReceived << "\n";
-    m_logFileStream->flush();
-    }
-}
-
-void ConnectionsTable::parseEndpoint(const std::string &endpoint, std::string &ip, std::string &port) {
+void ConnectionsTable::parseEndpoint(const std::string &endpoint, std::string &ip, std::string &port)
+{
     size_t colonPos = endpoint.find_last_of(':');
-    if (colonPos != std::string::npos) {
+    if (colonPos != std::string::npos)
+    {
         ip = endpoint.substr(0, colonPos);
         port = endpoint.substr(colonPos + 1);
-    } else {
+    }
+    else
+    {
         ip = endpoint;
         port = "0";
     }
+}
+
+void ConnectionsTable::logConnectionsTable(SortBy sortBy) {
+    if (!m_logFilePath.empty()) {
+        std::lock_guard<std::mutex> lock(m_logMutex);
+
+
+        m_logFileStream = std::make_shared<std::ofstream>(m_logFilePath, std::ios::trunc | std::ios::out);
+
+        if (!m_logFileStream->is_open()) {
+            return;
+        }
+
+        *m_logFileStream << "timestamp,protocol,src_ip,src_port,dst_ip,dst_port,bytes_sent,bytes_received,packets_sent,packets_received\n";
+
+        std::vector<Connection> connections;
+        getSortedConnections(sortBy, connections);
+
+        getTopConnections(10, connections);
+
+        auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+        for (const Connection &connection : connections) {
+            std::string srcEndpoint = ConnectionID::endpointToString(connection.m_ID.getSrcEndPoint());
+            std::string destEndpoint = ConnectionID::endpointToString(connection.m_ID.getDestEndPoint());
+            std::string protocol = Display::protocolToStr(connection.m_ID.getProtocol());
+
+            std::string srcIP, srcPortStr, destIP, destPortStr;
+            parseEndpoint(srcEndpoint, srcIP, srcPortStr);
+            parseEndpoint(destEndpoint, destIP, destPortStr);
+
+            uint16_t srcPort = std::stoi(srcPortStr);
+            uint16_t destPort = std::stoi(destPortStr);
+
+            *m_logFileStream << now << ","
+                             << protocol << ","
+                             << srcIP << ","
+                             << srcPort << ","
+                             << destIP << ","
+                             << destPort << ","
+                             << connection.m_bytesSent << ","
+                             << connection.m_bytesReceived << ","
+                             << connection.m_packetsSent << ","
+                             << connection.m_packetsReceived << "\n";
+        }
+
+        m_logFileStream->flush();
+    }
+}
+
+void ConnectionsTable::setLogFilePath(const std::string& logFilePath) {
+    m_logFilePath = logFilePath;  
 }

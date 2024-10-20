@@ -23,7 +23,7 @@ INT_TEST_TARGET = integration_tests
 
 DEPS = $(OBJS:.o=.d) $(TEST_OBJS:.o=.d) $(INT_TEST_OBJS:.o=.d)
 
-all: $(TARGET) $(TEST_TARGET) $(INT_TEST_TARGET)
+all: $(TARGET) 
 
 $(TARGET): $(OBJS) src/isa-top.o
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) src/isa-top.o $(LDFLAGS)
@@ -40,6 +40,6 @@ $(INT_TEST_TARGET): $(INT_TEST_OBJS) $(OBJS)
 -include $(DEPS)
 
 clean:
-	rm -f $(OBJS) $(TEST_OBJS) $(INT_TEST_OBJS) src/isa-top.o $(DEPS) $(TARGET) $(TEST_TARGET) $(INT_TEST_TARGET)
+	rm -f $(OBJS) $(TEST_OBJS) $(INT_TEST_OBJS) src/isa-top.o $(DEPS) $(TEST_TARGET) $(INT_TEST_TARGET)
 
 .PHONY: all clean

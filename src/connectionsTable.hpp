@@ -46,10 +46,13 @@ public:
     void getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector);
     void getTopConnections(unsigned int num, std::vector <Connection> &connectionsSorted);
 
-    void setLogFileStream(std::shared_ptr<std::ofstream> logFileStream);
-    void logConnectionUpdate(const ConnectionID &id);
     void parseEndpoint(const std::string &endpoint, std::string &ip, std::string &port);
+    void setLogFileStream();
+    void logConnectionsTable(SortBy sortBy);
     std::shared_ptr<std::ofstream> m_logFileStream; 
+    std::string m_logFilePath;
     std::mutex m_logMutex;
+
+    void setLogFilePath(const std::string& logFilePath);
 
 };

@@ -34,6 +34,9 @@ void Display::update()
     std::vector<Connection> connections;
     m_connectionsTable.getSortedConnections(m_sortBy, connections);
     m_connectionsTable.getTopConnections(10, connections);
+
+    m_connectionsTable.logConnectionsTable(m_sortBy);
+
     int row = 2;
     for (auto current = connections.begin(); current != connections.end(); current++)
     {
