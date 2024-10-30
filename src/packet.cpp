@@ -2,18 +2,17 @@
 
 #include <ifaddrs.h>
 #include <iostream>
-#include <arpa/inet.h>       
-#include <netinet/ip.h>      
-#include <netinet/ip6.h>     
-#include <netinet/tcp.h>     
-#include <netinet/udp.h>     
-#include <cstring>           
-#include <netinet/ip_icmp.h> 
+#include <arpa/inet.h>
+#include <netinet/ip.h>
+#include <netinet/ip6.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
+#include <cstring>
+#include <netinet/ip_icmp.h>
 #include <netinet/icmp6.h>
 #include "connectionsTable.hpp"
 #include "connectionID.hpp"
 #include "connection.hpp"
-
 
 PacketCapture::PacketCapture(std::string interfaceName, ConnectionsTable &connectionsTable) : m_connectionsTable(connectionsTable)
 {
@@ -26,45 +25,54 @@ PacketCapture::~PacketCapture()
 {
     stopCapture();
 }
-void PacketCapture::initLocalAddresses(){
-struct ifaddrs *ifaddr;
-if (getifaddrs(&ifaddr) == -1)
-{
-    std::cerr << "Couldn't retrieve interfaces local addresses" << std::endl;
-    exit(EXIT_FAILURE);
-}
 
-for (struct ifaddrs* ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+void PacketCapture::initLocalAddresses()
+{
+    struct ifaddrs *ifaddr;
+    if (getifaddrs(&ifaddr) == -1)
+    {
+        std::cerr << "Couldn't retrieve interfaces local addresses" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    for (struct ifaddrs *ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next)
+    {
         if (!ifa->ifa_addr)
             continue;
 
         if (std::string(ifa->ifa_name) != m_interfaceName)
             continue;
 
-        if (ifa->ifa_addr->sa_family == AF_INET) { 
+        if (ifa->ifa_addr->sa_family == AF_INET)
+        {
             struct sockaddr_in* sa = reinterpret_cast<struct sockaddr_in*>(ifa->ifa_addr);
-            m_localIPv4Addresses.push_back(sa->sin_addr);
+            in_addr addr_network_order;
+            addr_network_order.s_addr = sa->sin_addr.s_addr;
+            m_localIPv4Addresses.push_back(addr_network_order);
         }
-        else if (ifa->ifa_addr->sa_family == AF_INET6) {
-            struct sockaddr_in6* sa6 = reinterpret_cast<struct sockaddr_in6*>(ifa->ifa_addr);
+        else if (ifa->ifa_addr->sa_family == AF_INET6)
+        {
+            struct sockaddr_in6 *sa6 = reinterpret_cast<struct sockaddr_in6 *>(ifa->ifa_addr);
             m_localIPv6Addresses.push_back(sa6->sin6_addr);
         }
     }
     freeifaddrs(ifaddr);
 }
-bool PacketCapture::isLocalIPv4Address(const in_addr& addr)
-{
+
+bool PacketCapture::isLocalIPv4Address(const in_addr& addr) {
     for (in_addr& localAddr : m_localIPv4Addresses) {
-        if (memcmp(&localAddr, &addr, sizeof(in_addr)) == 0) {
+        if (localAddr.s_addr == addr.s_addr) {
             return true;
         }
     }
     return false;
 }
-bool PacketCapture::isLocalIPv6Address(const in6_addr& addr)
+bool PacketCapture::isLocalIPv6Address(const in6_addr &addr)
 {
-    for (in6_addr& localAddr : m_localIPv6Addresses) {
-        if (memcmp(&localAddr, &addr, sizeof(in6_addr)) == 0) {
+    for (in6_addr &localAddr : m_localIPv6Addresses)
+    {
+        if (memcmp(&localAddr, &addr, sizeof(in6_addr)) == 0)
+        {
             return true;
         }
     }
@@ -82,22 +90,21 @@ void PacketCapture::startCapture()
     }
     uint datalinkType = pcap_datalink(m_pcapHandle);
 
-    switch(datalinkType)
+    switch (datalinkType)
     {
-        case DLT_EN10MB:
-            m_linkLevelHeaderLen = 14;
-            break;
-        case DLT_NULL:
-            m_linkLevelHeaderLen = 4;
-            break;
-        case DLT_LOOP:
-            m_linkLevelHeaderLen = 4;
-            break;
-        default:
-            std::cerr << "Unsupported datalink type: " << datalinkType << std::endl;
-            exit(EXIT_FAILURE);
+    case DLT_EN10MB:
+        m_linkLevelHeaderLen = 14;
+        break;
+    case DLT_NULL:
+        m_linkLevelHeaderLen = 4;
+        break;
+    case DLT_LOOP:
+        m_linkLevelHeaderLen = 4;
+        break;
+    default:
+        std::cerr << "Unsupported datalink type: " << datalinkType << std::endl;
+        exit(EXIT_FAILURE);
     }
-
 
     m_isCapturing = true;
     int loopStatus = pcap_loop(m_pcapHandle, 0, PacketCapture::packetHandler, reinterpret_cast<unsigned char *>(this));
@@ -132,15 +139,14 @@ void PacketCapture::stopCapture()
         m_isCapturing = false;
     }
 }
-void PacketCapture::packetHandler(unsigned char* packetCaptureObject, const struct pcap_pkthdr* pkthdr, const unsigned char* packet)
+void PacketCapture::packetHandler(unsigned char *packetCaptureObject, const struct pcap_pkthdr *pkthdr, const unsigned char *packet)
 {
     uint8_t version = 0;
     uint32_t family = 0;
-    PacketCapture* self = reinterpret_cast<PacketCapture*>(packetCaptureObject);
-    const unsigned char* ipPacket = packet + self->m_linkLevelHeaderLen;
+    PacketCapture *self = reinterpret_cast<PacketCapture *>(packetCaptureObject);
+    const unsigned char *ipPacket = packet + self->m_linkLevelHeaderLen;
 
-
-    if (self->m_dataLinkType== DLT_NULL || self->m_dataLinkType == DLT_LOOP)
+    if (self->m_dataLinkType == DLT_NULL || self->m_dataLinkType == DLT_LOOP)
     {
         std::memcpy(&family, packet, 4);
     }
@@ -148,7 +154,6 @@ void PacketCapture::packetHandler(unsigned char* packetCaptureObject, const stru
     {
         family = 0;
     }
-
 
     if (family == AF_INET || (family == 0 && ((ipPacket[0] >> 4) == 4)))
     {
@@ -159,13 +164,13 @@ void PacketCapture::packetHandler(unsigned char* packetCaptureObject, const stru
         version = 6;
     }
     else
-    {       
+    {
         return;
     }
 
-    if (version == 4) 
+    if (version == 4)
     {
-        const struct ip* ipHeader = reinterpret_cast<const struct ip*>(ipPacket);
+        const struct ip *ipHeader = reinterpret_cast<const struct ip *>(ipPacket);
         uint8_t protocol = ipHeader->ip_p;
 
         in_addr srcIPv4 = ipHeader->ip_src;
@@ -178,7 +183,7 @@ void PacketCapture::packetHandler(unsigned char* packetCaptureObject, const stru
         {
         case IPPROTO_TCP:
         {
-            const struct tcphdr* tcpHeader = reinterpret_cast<const struct tcphdr*>(ipPacket + (ipHeader->ip_hl * 4));
+            const struct tcphdr *tcpHeader = reinterpret_cast<const struct tcphdr *>(ipPacket + (ipHeader->ip_hl * 4));
             uint16_t srcPort = ntohs(tcpHeader->th_sport);
             uint16_t destPort = ntohs(tcpHeader->th_dport);
             ConnectionID connID = ConnectionID::storeIPv4InIPv6(srcIPv4, srcPort, destIPv4, destPort, Protocol::TCP);
@@ -195,7 +200,7 @@ void PacketCapture::packetHandler(unsigned char* packetCaptureObject, const stru
 
         case IPPROTO_UDP:
         {
-            const struct udphdr* udpHeader = reinterpret_cast<const struct udphdr*>(ipPacket + (ipHeader->ip_hl * 4));
+            const struct udphdr *udpHeader = reinterpret_cast<const struct udphdr *>(ipPacket + (ipHeader->ip_hl * 4));
             uint16_t srcPort = ntohs(udpHeader->uh_sport);
             uint16_t destPort = ntohs(udpHeader->uh_dport);
             ConnectionID connID = ConnectionID::storeIPv4InIPv6(srcIPv4, srcPort, destIPv4, destPort, Protocol::UDP);
@@ -229,7 +234,7 @@ void PacketCapture::packetHandler(unsigned char* packetCaptureObject, const stru
     }
     else if (version == 6)
     {
-        const struct ip6_hdr* ip6Header = reinterpret_cast<const struct ip6_hdr*>(ipPacket);
+        const struct ip6_hdr *ip6Header = reinterpret_cast<const struct ip6_hdr *>(ipPacket);
         uint8_t protocol = ip6Header->ip6_nxt;
 
         in6_addr srcIPv6 = ip6Header->ip6_src;
@@ -242,7 +247,7 @@ void PacketCapture::packetHandler(unsigned char* packetCaptureObject, const stru
         {
         case IPPROTO_TCP:
         {
-            const struct tcphdr* tcpHeader = reinterpret_cast<const struct tcphdr*>(ipPacket + sizeof(struct ip6_hdr));
+            const struct tcphdr *tcpHeader = reinterpret_cast<const struct tcphdr *>(ipPacket + sizeof(struct ip6_hdr));
             uint16_t srcPort = ntohs(tcpHeader->th_sport);
             uint16_t destPort = ntohs(tcpHeader->th_dport);
 
@@ -270,7 +275,7 @@ void PacketCapture::packetHandler(unsigned char* packetCaptureObject, const stru
 
         case IPPROTO_UDP:
         {
-            const struct udphdr* udpHeader = reinterpret_cast<const struct udphdr*>(ipPacket + sizeof(struct ip6_hdr));
+            const struct udphdr *udpHeader = reinterpret_cast<const struct udphdr *>(ipPacket + sizeof(struct ip6_hdr));
             uint16_t srcPort = ntohs(udpHeader->uh_sport);
             uint16_t destPort = ntohs(udpHeader->uh_dport);
 
