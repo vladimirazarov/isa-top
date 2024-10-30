@@ -16,6 +16,8 @@ public:
     static void packetHandler(unsigned char *packetCaptureObject, const struct pcap_pkthdr* pkthdr, const unsigned char* packet);
 
     std::string m_interfaceName;
+    uint m_linkLevelHeaderLen; 
+    int m_dataLinkType;
     pcap_t* m_pcapHandle;
     ConnectionsTable& m_connectionsTable;
     bool m_isCapturing;

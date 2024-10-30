@@ -80,6 +80,25 @@ void PacketCapture::startCapture()
         std::cerr << "Couldn't open interface " << m_interfaceName << ": " << currentError << std::endl;
         exit(EXIT_FAILURE);
     }
+    uint datalinkType = pcap_datalink(m_pcapHandle);
+
+    switch(datalinkType)
+    {
+        case DLT_EN10MB:
+            m_linkLevelHeaderLen = 14;
+            break;
+        case DLT_NULL:
+            m_linkLevelHeaderLen = 4;
+            break;
+        case DLT_LOOP:
+            m_linkLevelHeaderLen = 4;
+            break;
+        default:
+            std::cerr << "Unsupported datalink type: " << datalinkType << std::endl;
+            exit(EXIT_FAILURE);
+    }
+
+
     m_isCapturing = true;
     int loopStatus = pcap_loop(m_pcapHandle, 0, PacketCapture::packetHandler, reinterpret_cast<unsigned char *>(this));
 
@@ -115,9 +134,34 @@ void PacketCapture::stopCapture()
 }
 void PacketCapture::packetHandler(unsigned char* packetCaptureObject, const struct pcap_pkthdr* pkthdr, const unsigned char* packet)
 {
+    uint8_t version = 0;
+    uint32_t family = 0;
     PacketCapture* self = reinterpret_cast<PacketCapture*>(packetCaptureObject);
-    const unsigned char* ipPacket = packet + 14;
-    uint8_t version = (ipPacket[0] >> 4);
+    const unsigned char* ipPacket = packet + self->m_linkLevelHeaderLen;
+
+
+    if (self->m_dataLinkType== DLT_NULL || self->m_dataLinkType == DLT_LOOP)
+    {
+        std::memcpy(&family, packet, 4);
+    }
+    else
+    {
+        family = 0;
+    }
+
+
+    if (family == AF_INET || (family == 0 && ((ipPacket[0] >> 4) == 4)))
+    {
+        version = 4;
+    }
+    else if (family == AF_INET6 || (family == 0 && ((ipPacket[0] >> 4) == 6)))
+    {
+        version = 6;
+    }
+    else
+    {       
+        return;
+    }
 
     if (version == 4) 
     {
