@@ -224,7 +224,7 @@ void ConnectionsTable::logConnectionsTable(SortBy sortBy) {
         std::vector<Connection> connections;
         getSortedConnections(sortBy, connections);
 
-        getTopConnections(10, connections);
+        //getTopConnections(10, connections);
 
         auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
