@@ -17,18 +17,18 @@ void Display::init()
     curs_set(0);
     nodelay(stdscr, TRUE);
     keypad(stdscr, TRUE);
-
 }
 void Display::update()
 {
-    int maxR, maxC;
+     int maxR, maxC;
     getmaxyx(stdscr, maxR, maxC);
 
     clear();
-    // Print header
-    mvprintw(0, 0, "%-30s %-30s %-8s %-15s %-15s %-15s %-15s",
-             "Src IP:Port", "Dst IP:Port", "Proto", "Rx (b/s)", "Rx (p/s)", "Tx (b/s)", "Tx (p/s)");
-    mvhline(1, 0, '-', 120);
+    mvprintw(0, 0, "%-25s %-25s %-8s %-18s %-18s",
+             "Src IP:Port", "Dst IP:Port", "Proto", "Rx", "Tx");
+    mvprintw(1, 0, "%-25s %-25s %-8s %-9s %-8s %-9s %-8s",
+             "", "", "", "b/s", "p/s", "b/s", "p/s");
+    mvhline(2, 0, '-', maxC);
     m_connectionsTable.calculateSpeed();
 
     std::vector<Connection> connections;
@@ -64,25 +64,22 @@ std::string Display::protocolToStr(Protocol protocol)
         break;
     }
 }
+
 void Display::printConnection(int row, Connection &connection)
 {
     std::string srcIPfull = ConnectionID::endpointToString(connection.m_ID.getSrcEndPoint());
     std::string destIPfull = ConnectionID::endpointToString(connection.m_ID.getDestEndPoint());
-    std::string protocol;
 
-    mvprintw(row + 1, 0, "%-30s %-30s %-8s %-15s %-15s %-15s %-15s",
+    mvprintw(row + 2, 0, "%-25s %-25s %-8s %-9s %-8s %-9s %-8s",
              srcIPfull.c_str(),
              destIPfull.c_str(),
-
              protocolToStr(connection.m_ID.m_protocol).c_str(),
-
              formatTraffic(connection.m_rxSpeedBytes).c_str(),
-             formatTraffic(connection.m_rxSpeedPackets).c_str(),
+             formatPacketRate(connection.m_rxSpeedPackets).c_str(),
              formatTraffic(connection.m_txSpeedBytes).c_str(),
-             formatTraffic(connection.m_txSpeedPackets).c_str()
+             formatPacketRate(connection.m_txSpeedPackets).c_str()
     );
 }
-
 
 std::string Display::formatTraffic(double bytes)
 {
@@ -90,9 +87,10 @@ std::string Display::formatTraffic(double bytes)
     double size = bytes;
     int unitIndex = 0;
 
-    if (size < 1 && size > 0) {
+    if (size < 1 && size > 0)
+    {
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(2) << size << "B";  
+        oss << std::fixed << std::setprecision(2) << size << "B";
         return oss.str();
     }
 
@@ -102,9 +100,25 @@ std::string Display::formatTraffic(double bytes)
         unitIndex++;
     }
 
-
     std::ostringstream oss;
     oss << std::fixed << std::setprecision(1) << size << units[unitIndex];
+    return oss.str();
+}
+
+std::string Display::formatPacketRate(double packets)
+{
+    const char *units[] = {"", "K", "M", "G", "T"};
+    double rate = packets;
+    int unitIndex = 0;
+
+    while (rate >= 1000 && unitIndex < 4)
+    {
+        rate /= 1000;
+        unitIndex++;
+    }
+
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(1) << rate << units[unitIndex];
     return oss.str();
 }
 

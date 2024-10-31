@@ -26,5 +26,6 @@ class Display{
         void kill();
         void update();
         static std::string protocolToStr(Protocol protocol);
+        std::string formatPacketRate(double packets);
         std::string formatTraffic(double bytes);
 };
