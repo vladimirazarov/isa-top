@@ -1,5 +1,6 @@
 #include "packet.hpp"
 
+#include <ncurses.h>
 #include <ifaddrs.h>
 #include <iostream>
 #include <arpa/inet.h>
@@ -31,6 +32,7 @@ void PacketCapture::initLocalAddresses()
     struct ifaddrs *ifaddr;
     if (getifaddrs(&ifaddr) == -1)
     {
+        endwin();
         std::cerr << "Couldn't retrieve interfaces local addresses" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -85,6 +87,7 @@ void PacketCapture::startCapture()
     m_pcapHandle = pcap_open_live(m_interfaceName.c_str(), BUFSIZ, 1, 1000, currentError);
     if (m_pcapHandle == nullptr)
     {
+        endwin();
         std::cerr << "Couldn't open interface " << m_interfaceName << ": " << currentError << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -102,6 +105,7 @@ void PacketCapture::startCapture()
         m_linkLevelHeaderLen = 4;
         break;
     default:
+        endwin();
         std::cerr << "Unsupported datalink type: " << datalinkType << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -111,6 +115,7 @@ void PacketCapture::startCapture()
 
     if (loopStatus == -1)
     {
+        endwin();
         std::cerr << "Error during packet capture: " << pcap_geterr(m_pcapHandle) << std::endl;
         exit(EXIT_FAILURE);
     }
