@@ -2,11 +2,11 @@
 
 #define USAGE_MESSAGE "\
 Usage: isa-top -i <interface> [-s <b|p>] [-l <logfile>]\n\n \
-    Options:\n \
-        -h            Display this help message and exit\n \
-        -i <arg>      The network interface for app to listen on\n \
-        -s <arg>      Sort the output by bytes or packets, <arg> is b or p accordingly\nS \
-        -l, --log     Specify the log file path\n"
+Options:\n \
+-h            Display this help message and exit\n \
+-i <arg>      The network interface for app to listen on\n \
+-s <arg>      Sort the output by bytes or packets, <arg> is b or p accordingly\n \
+-l, --log     Turn on the logging\n"
 
 class CommandLineInterface{ 
 public:

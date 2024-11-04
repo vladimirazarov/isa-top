@@ -2,6 +2,7 @@
 
 #include <ncurses.h>
 #include <ifaddrs.h>
+#include "display.hpp"
 #include <iostream>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
@@ -21,6 +22,7 @@ PacketCapture::PacketCapture(std::string interfaceName, ConnectionsTable &connec
     m_interfaceName = interfaceName;
     m_isCapturing = false;
     initLocalAddresses();
+    m_dataLinkType = 0;
 }
 PacketCapture::~PacketCapture()
 {
@@ -32,6 +34,7 @@ void PacketCapture::initLocalAddresses()
     struct ifaddrs *ifaddr;
     if (getifaddrs(&ifaddr) == -1)
     {
+        endwin();
         endwin();
         std::cerr << "Couldn't retrieve interfaces local addresses" << std::endl;
         exit(EXIT_FAILURE);
@@ -88,12 +91,13 @@ void PacketCapture::startCapture()
     if (m_pcapHandle == nullptr)
     {
         endwin();
+        endwin();
         std::cerr << "Couldn't open interface " << m_interfaceName << ": " << currentError << std::endl;
         exit(EXIT_FAILURE);
     }
-    uint datalinkType = pcap_datalink(m_pcapHandle);
+    m_dataLinkType = pcap_datalink(m_pcapHandle);
 
-    switch (datalinkType)
+    switch (m_dataLinkType)
     {
     case DLT_EN10MB:
         m_linkLevelHeaderLen = 14;
