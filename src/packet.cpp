@@ -110,7 +110,7 @@ void PacketCapture::startCapture()
         break;
     default:
         endwin();
-        std::cerr << "Unsupported datalink type: " << datalinkType << std::endl;
+        std::cerr << "Unsupported datalink type: " << m_dataLinkType << std::endl;
         exit(EXIT_FAILURE);
     }
 
