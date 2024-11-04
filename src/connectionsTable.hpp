@@ -17,7 +17,7 @@
 #include <vector>
 #include <stdint.h>
 #include <sstream>
-#include <arpa/inet.h>  
+#include <arpa/inet.h>
 #include <mutex>
 #include "connectionID.hpp"
 #include "connection.hpp"
@@ -25,19 +25,22 @@
 #include <memory>
 #include <fstream>
 
-enum SortBy{
-    BY_BYTES, 
+// Enum to specify sorting criteria
+enum SortBy
+{
+    BY_BYTES,
     BY_PACKETS
 };
 
-
+// Class to manage all network connections
 class ConnectionsTable
 {
 public:
-    // Connection table 1 sec before now
+    // Connections table 1 sec before now
     std::unordered_map<ConnectionID, Connection, ConnectionIDHash> m_connectionsTableBefore;
-    // Connection table right now
+    // Connections table right now
     std::unordered_map<ConnectionID, Connection, ConnectionIDHash> m_connectionsTable;
+    // Mutex for thread safety
     std::mutex m_tableMutex;
 
     void removeConnection(Connection connection);
@@ -49,15 +52,14 @@ public:
     void calculateSpeed();
 
     void getSortedConnections(SortBy sortBy, std::vector<Connection> &outputVector);
-    void getTopConnections(unsigned int num, std::vector <Connection> &connectionsSorted);
+    void getTopConnections(unsigned int num, std::vector<Connection> &connectionsSorted);
 
     void parseEndpoint(const std::string &endpoint, std::string &ip, std::string &port);
     void setLogFileStream();
     void logConnectionsTable(SortBy sortBy);
-    std::shared_ptr<std::ofstream> m_logFileStream; 
+    std::shared_ptr<std::ofstream> m_logFileStream;
     std::string m_logFilePath;
     std::mutex m_logMutex;
 
-    void setLogFilePath(const std::string& logFilePath);
-
+    void setLogFilePath(const std::string &logFilePath);
 };

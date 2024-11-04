@@ -12,44 +12,62 @@
 #include <memory>
 #include <iostream>
 
-ConnectionsTable* globalConnectionsTable = nullptr;
+// Global pointer to connections table
+ConnectionsTable *globalConnectionsTable = nullptr;
 
-void signalHandler(int signum) {
+// Clean up after Ctrl+C interrupt
+void signalHandler(int signum)
+{
     endwin();
     std::cerr << "Interrupt signal (" << signum << ") received. Exiting..." << std::endl;
     exit(signum);
 }
 
-void runCapture(PacketCapture& pc) {
+// Run packet capture in its own thread
+void runCapture(PacketCapture &pc)
+{
     pc.startCapture();
 }
 
-void runDisplay(Display& display) {
+// Run display in its own thread
+void runDisplay(Display &display)
+{
     display.run();
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
+    // Get command line arguments
     CommandLineInterface cli(argc, argv);
     cli.validateRetrieveArgs();
-
+    // Create ConnectionsTable object
     ConnectionsTable ct;
     globalConnectionsTable = &ct;
 
-    if (!cli.m_logFilePath.empty()) {
+    // If --log was specified, set the log file path
+    if (!cli.m_logFilePath.empty())
+    {
         ct.setLogFilePath(cli.m_logFilePath);
     }
-
+    // Signal handler for Ctrl+C
     std::signal(SIGINT, signalHandler);
+    // Create PacketCapture object based on the specified interface
     PacketCapture pc(cli.m_interface, ct);
+    // Create display object based on the specified sorting criteria
     Display display(ct, cli.m_sortBy, 1);
 
-    if (!cli.m_logFilePath.empty()) {
-        ct.setLogFileStream();  
+    // If --log was specified, set the log file stream
+    if (!cli.m_logFilePath.empty())
+    {
+        ct.setLogFileStream();
     }
 
+    // Start capture packets thread
     std::thread captureThread(runCapture, std::ref(pc));
+    // Start display thread
     std::thread displayThread(runDisplay, std::ref(display));
 
+    // Wait for both threads to finish
     captureThread.join();
     displayThread.join();
 

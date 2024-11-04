@@ -13,15 +13,19 @@ Options:\n \
 -s <arg>      Sort the output by bytes or packets, <arg> is b or p accordingly\n \
 -l, --log     Turn on the logging\n"
 
-class CommandLineInterface{ 
+// Class to handle command line arguments
+class CommandLineInterface
+{
 public:
+    // Network interface to listen on
     std::string m_interface;
+    // Sorting criteria
     SortBy m_sortBy;
     void validateRetrieveArgs();
     CommandLineInterface(int argc, char *argv[]);
     std::string m_logFilePath;
+
 private:
     int m_argc;
     std::vector<std::string> m_argv;
 };
-

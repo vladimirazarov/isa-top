@@ -18,7 +18,7 @@ Rozšíření: Možnost zapnutí logování pomocí přepínače \fB\-l\fR nebo 
 .SH OPTIONS
 .TP
 .B \-h
-Zobrazí tuto nápovědu a ukončí program.
+Zobrazí nápovědu a ukončí program.
 .TP
 .B \-i \fIinterface\fR
 Síťové rozhraní, na kterém má aplikace naslouchat.
@@ -32,17 +32,16 @@ Zapne logování do souboru \fBlog.csv\fR.
 .SH EXAMPLES
 .PD 0
 .RS
-.IP \[bu]
 \fB./isa-top \-i eth0 \-s b \-l\fR
-.IP \[bu]
+.TP
 \fB./isa-top \-i lo \-s p\fR
-.IP \[bu]
+.TP
 \fB./isa-top \-i wlan0\fR
 .RE
 .PD
 
 .SH FILES
-Součástí programu jsou soubory se zdrojovým kódem umístěné v adresáři \fB/src/\fR:
+Součástí programu jsou soubory se zdrojovým kódem umístěné v adresáři \fB./src/\fR:
 
 .RS
 .nf
@@ -59,13 +58,10 @@ display.hpp
 isa-top.cpp
 packet.cpp
 packet.hpp
-isa-top.1
-Makefile
-manual.pdf
 .fi
 .RE
 
-Testy jsou umístěné v adresáři \fB/test/\fR:
+Testy jsou umístěné v adresáři \fB./test/\fR:
 
 .RS
 .nf
@@ -74,12 +70,13 @@ unit.cpp
 .fi
 .RE
 
-Ostatní soubory jsou umíštěné v kořeném adresáři:
+Ostatní soubory jsou umíštěné v kořeném adresáři \fB./\fR:
 
 .RS
 .nf
 isa-top.1
 manual.pdf
+Makefile
 .fi
 .RE
 

@@ -17,20 +17,26 @@
 #include <iomanip>
 #include "connection.hpp"
 
-class Display{
-    public:
-        Display(ConnectionsTable &connectionsTable, SortBy sortBy, int updateInterval);
-        ~Display();
+// Display class handles showing the connections info on screen
+class Display
+{
+public:
+    // Constructor
+    Display(ConnectionsTable &connectionsTable, SortBy sortBy, int updateInterval);
+    // Destructor
+    ~Display();
 
-        void run();
-        ConnectionsTable &m_connectionsTable;
-        SortBy m_sortBy;
-        int m_updateInterval;
-        void printConnection(int row, Connection &connection);
-        void init();
-        void kill();
-        void update();
-        static std::string protocolToStr(Protocol protocol);
-        std::string formatPacketRate(double packets);
-        std::string formatTraffic(double bytes);
+    void run();
+    ConnectionsTable &m_connectionsTable;
+    SortBy m_sortBy;
+    int m_updateInterval;
+
+    // Helper functions
+    void printConnection(int row, Connection &connection);
+    void init();
+    void kill();
+    void update();
+    static std::string protocolToStr(Protocol protocol);
+    std::string formatPacketRate(double packets);
+    std::string formatTraffic(double bytes);
 };
