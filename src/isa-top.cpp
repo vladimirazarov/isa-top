@@ -1,3 +1,8 @@
+/*
+ * Author: Vladimir Azarov
+ * Login:  xazaro00
+ */
+
 #include "cli.hpp"
 #include "connectionsTable.hpp"
 #include "packet.hpp"
@@ -19,7 +24,7 @@ void runCapture(PacketCapture& pc) {
     pc.startCapture();
 }
 
-void runDisplay(Display& display, int updateInterval) {
+void runDisplay(Display& display) {
     display.run();
 }
 
@@ -43,7 +48,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::thread captureThread(runCapture, std::ref(pc));
-    std::thread displayThread(runDisplay, std::ref(display), 1);
+    std::thread displayThread(runDisplay, std::ref(display));
 
     captureThread.join();
     displayThread.join();

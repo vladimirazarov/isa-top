@@ -1,3 +1,8 @@
+/*
+ * Author: Vladimir Azarov
+ * Login:  xazaro00
+ */
+
 #include "connectionsTable.hpp"
 
 #define USAGE_MESSAGE "\

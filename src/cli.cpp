@@ -1,3 +1,8 @@
+/*
+ * Author: Vladimir Azarov
+ * Login:  xazaro00
+ */
+
 #include "cli.hpp"
 
 CommandLineInterface::CommandLineInterface(int argc, char *argv[])
@@ -10,31 +15,42 @@ CommandLineInterface::CommandLineInterface(int argc, char *argv[])
 };
 
 void CommandLineInterface::validateRetrieveArgs() {
-    if (m_argc < 3 || m_argc > 6) {
+    bool interfaceSpecified = false;
+
+    if (m_argc < 2 || m_argc > 6) {
         std::cerr << USAGE_MESSAGE << std::endl;
         exit(EXIT_FAILURE);
     }
 
     for (int i = 1; i < m_argc; ++i) {
-        if (m_argv[i] == "-i" && i + 1 < m_argc) {
-            m_interface = m_argv[i + 1];
-            i++;
-        } else if (m_argv[i] == "-s" && i + 1 < m_argc) {
-            if (m_argv[i + 1] == "b")
+        std::string arg = m_argv[i];
+
+        if (arg == "-i" && i + 1 < m_argc) {
+            m_interface = m_argv[++i];
+            interfaceSpecified = true;
+        } else if (arg == "-s" && i + 1 < m_argc) {
+            std::string sortArg = m_argv[++i];
+            if (sortArg == "b")
                 m_sortBy = SortBy::BY_BYTES;
-            else if (m_argv[i + 1] == "p")
+            else if (sortArg == "p")
                 m_sortBy = SortBy::BY_PACKETS;
             else {
                 std::cerr << USAGE_MESSAGE << std::endl;
                 exit(EXIT_FAILURE);
             }
-            i++;
-        } else if (m_argv[i] == "-l" || m_argv[i] == "--log") {
+        } else if (arg == "-l" || arg == "--log") {
             m_logFilePath = "log.csv";  
+        } else if (arg == "-h") {
+            std::cout << USAGE_MESSAGE << std::endl;
+            exit(EXIT_SUCCESS);
         } else {
             std::cerr << USAGE_MESSAGE << std::endl;
             exit(EXIT_FAILURE);
         }
     }
-}
 
+    if (!interfaceSpecified) {
+        std::cerr << USAGE_MESSAGE << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}

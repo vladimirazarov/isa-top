@@ -1,3 +1,8 @@
+/*
+ * Author: Vladimir Azarov
+ * Login:  xazaro00
+ */
+
 #include "connectionID.hpp"
 #include <cstring>
 #include <arpa/inet.h>

@@ -1,3 +1,8 @@
+/*
+ * Author: Vladimir Azarov
+ * Login:  xazaro00
+ */
+
 #pragma once
 
 #include <pcap.h>

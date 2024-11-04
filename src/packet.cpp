@@ -1,3 +1,8 @@
+/*
+ * Author: Vladimir Azarov
+ * Login:  xazaro00
+ */
+
 #include "packet.hpp"
 
 #include <ncurses.h>
@@ -34,7 +39,6 @@ void PacketCapture::initLocalAddresses()
     struct ifaddrs *ifaddr;
     if (getifaddrs(&ifaddr) == -1)
     {
-        endwin();
         endwin();
         std::cerr << "Couldn't retrieve interfaces local addresses" << std::endl;
         exit(EXIT_FAILURE);
@@ -90,7 +94,6 @@ void PacketCapture::startCapture()
     m_pcapHandle = pcap_open_live(m_interfaceName.c_str(), BUFSIZ, 1, 1000, currentError);
     if (m_pcapHandle == nullptr)
     {
-        endwin();
         endwin();
         std::cerr << "Couldn't open interface " << m_interfaceName << ": " << currentError << std::endl;
         exit(EXIT_FAILURE);

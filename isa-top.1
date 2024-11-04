@@ -1,0 +1,90 @@
+.TH isa-top 1 "4 November 2024" "isa-top manual" "User Commands"
+
+.SH NAME
+isa-top \- zobrazuje aktuální přenosové rychlosti pro jednotlivé komunikující IP adresy
+
+.SH SYNOPSIS
+.B isa-top
+.RB [ \-h ]
+.RB [ \-i\ \fIinterface\fR ]
+.RB [ \-s\ \fIb\fR|\fIp\fR ]
+.RB [ \-l\ |\ \-\-log ]
+
+.SH DESCRIPTION
+Nástroj \fBisa-top\fR slouží k zobrazení aktuálních přenosových rychlostí pro jednotlivé komunikující IP adresy. Po spuštění začne zachytávat provoz na zvoleném síťovém rozhraní pomocí knihovny \fBlibpcap\fR a počítá přenosovou rychlost pro jednotlivá zachycená spojení. Program funguje jako konzolová aplikace. Statistiky jsou zobrazeny v rámci terminálu a průběžně se aktualizují.
+
+Rozšíření: Možnost zapnutí logování pomocí přepínače \fB\-l\fR nebo \fB\-\-log\fR. Log bude uložen jako \fBlog.csv\fR v aktuálním adresáři.
+
+.SH OPTIONS
+.TP
+.B \-h
+Zobrazí tuto nápovědu a ukončí program.
+.TP
+.B \-i \fIinterface\fR
+Síťové rozhraní, na kterém má aplikace naslouchat.
+.TP
+.B \-s \fIb\fR|\fIp\fR
+Seřadí výstup podle počtu přenesených bajtů (\fBb\fR) nebo paketů (\fBp\fR).
+.TP
+.B \-l\fR,\ \fB\-\-log
+Zapne logování do souboru \fBlog.csv\fR.
+
+.SH EXAMPLES
+.PD 0
+.RS
+.IP \[bu]
+\fB./isa-top \-i eth0 \-s b \-l\fR
+.IP \[bu]
+\fB./isa-top \-i lo \-s p\fR
+.IP \[bu]
+\fB./isa-top \-i wlan0\fR
+.RE
+.PD
+
+.SH FILES
+Součástí programu jsou soubory se zdrojovým kódem umístěné v adresáři \fB/src/\fR:
+
+.RS
+.nf
+cli.cpp
+cli.hpp
+connection.cpp
+connection.hpp
+connectionID.cpp
+connectionID.hpp
+connectionsTable.cpp
+connectionsTable.hpp
+display.cpp
+display.hpp
+isa-top.cpp
+packet.cpp
+packet.hpp
+isa-top.1
+Makefile
+manual.pdf
+.fi
+.RE
+
+Testy jsou umístěné v adresáři \fB/test/\fR:
+
+.RS
+.nf
+int.cpp
+unit.cpp
+.fi
+.RE
+
+Ostatní soubory jsou umíštěné v kořeném adresáři:
+
+.RS
+.nf
+isa-top.1
+manual.pdf
+.fi
+.RE
+
+
+.SH AUTHOR
+Vladimir Azarov (\fBxazaro00\fR)
+
+Datum vytvoření: 4. listopadu 2024

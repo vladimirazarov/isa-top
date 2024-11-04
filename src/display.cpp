@@ -1,3 +1,8 @@
+/*
+ * Author: Vladimir Azarov
+ * Login:  xazaro00
+ */
+
 #include "display.hpp"
 
 Display::Display(ConnectionsTable &connectionsTable, SortBy sortBy, int updateInterval) : m_connectionsTable(connectionsTable)
