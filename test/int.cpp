@@ -1,3 +1,8 @@
+/*
+ * Author: Vladimir Azarov
+ * Login:  xazaro00
+ */
+
 #include "../src/cli.hpp"
 #include "../src/packet.hpp"
 #include "../src/connectionsTable.hpp"
@@ -15,6 +20,7 @@
 #include <netinet/tcp.h>
 #include <pcap.h>
 
+// Helper function to convert a vector of strings to a vector of char* for argv
 static std::vector<char*> createArgv(const std::vector<std::string>& args) {
     std::vector<char*> argv;
     for (const auto& arg : args) {
@@ -24,6 +30,7 @@ static std::vector<char*> createArgv(const std::vector<std::string>& args) {
     return argv;
 }
 
+// Helper to create a mock pcap header with a specific length
 pcap_pkthdr createMockPcapHeader(uint32_t len) {
     pcap_pkthdr header;
     header.ts.tv_sec = 0;
@@ -33,6 +40,7 @@ pcap_pkthdr createMockPcapHeader(uint32_t len) {
     return header;
 }
 
+// Test to ensure CommandLineInterface initializes PacketCapture correctly
 TEST(CommandLineInterfaceIntegrationTest, CLIInitializesPacketCapture) {
     std::vector<std::string> args = {"program", "-i", "eth0", "-s", "b"};
     std::vector<char*> argv = createArgv(args);
@@ -48,6 +56,7 @@ TEST(CommandLineInterfaceIntegrationTest, CLIInitializesPacketCapture) {
     EXPECT_EQ(packetCapture.m_interfaceName, "eth0");
 }
 
+// Test to simulate the main flow by capturing fake packets
 TEST(FullSystemIntegrationTest, SimulatedMainFlow) {
     std::vector<std::string> args = {"program", "-i", "eth0", "-s", "p"};
     std::vector<char*> argv = createArgv(args);
@@ -60,13 +69,16 @@ TEST(FullSystemIntegrationTest, SimulatedMainFlow) {
 
     PacketCapture packetCapture(cli.m_interface, connectionsTable);
 
+    // Set data link type to Ethernet and header length
     packetCapture.m_dataLinkType = DLT_EN10MB; 
     packetCapture.m_linkLevelHeaderLen = 14;   
 
+    // Add a local IPv4 address
     in_addr localAddr;
     inet_pton(AF_INET, "192.168.1.10", &localAddr);
     packetCapture.m_localIPv4Addresses.push_back(localAddr);
 
+    // Simulate capturing 5 TCP packets
     for (int i = 0; i < 5; ++i) {
         unsigned char packet[14 + sizeof(struct ip) + sizeof(struct tcphdr)];
         memset(packet, 0, sizeof(packet));
@@ -96,14 +108,16 @@ TEST(FullSystemIntegrationTest, SimulatedMainFlow) {
     ASSERT_EQ(connections.size(), 5);
 }
 
-
+// Test to check integration between PacketCapture and Display
 TEST(PacketCaptureDisplayIntegrationTest, PacketCaptureAndDisplay) {
     ConnectionsTable connectionsTable;
     PacketCapture packetCapture("eth0", connectionsTable);
 
+    // Set data link type to Ethernet and header length
     packetCapture.m_dataLinkType = DLT_EN10MB; 
     packetCapture.m_linkLevelHeaderLen = 14;   
 
+    // Add a local IPv4 address
     in_addr localAddr;
     inet_pton(AF_INET, "192.168.1.10", &localAddr);
     packetCapture.m_localIPv4Addresses.push_back(localAddr);
@@ -111,23 +125,26 @@ TEST(PacketCaptureDisplayIntegrationTest, PacketCaptureAndDisplay) {
     Display display(connectionsTable, SortBy::BY_BYTES, 1);
 
     display.init();
-
     display.update();
 
-    SUCCEED();
+    SUCCEED(); 
 }
 
+// Test to ensure PacketCapture correctly updates the ConnectionsTable
 TEST(PacketCaptureIntegrationTest, PacketCaptureUpdatesConnectionsTable) {
     ConnectionsTable connectionsTable;
     PacketCapture packetCapture("eth0", connectionsTable);
 
+    // Set data link type to Ethernet and header length
     packetCapture.m_dataLinkType = DLT_EN10MB; 
     packetCapture.m_linkLevelHeaderLen = 14;   
 
+    // Add a local IPv4 address
     in_addr localAddr;
     inet_pton(AF_INET, "192.168.1.10", &localAddr);
     packetCapture.m_localIPv4Addresses.push_back(localAddr);
 
+    // Create a fake TCP packet
     unsigned char packet[14 + sizeof(struct ip) + sizeof(struct tcphdr)];
     memset(packet, 0, sizeof(packet));
 
@@ -146,8 +163,10 @@ TEST(PacketCaptureIntegrationTest, PacketCaptureUpdatesConnectionsTable) {
 
     pcap_pkthdr pkthdr = createMockPcapHeader(sizeof(packet));
 
+    // Process the fake packet
     PacketCapture::packetHandler(reinterpret_cast<unsigned char*>(&packetCapture), &pkthdr, packet);
 
+    // Create expected ConnectionID
     sockaddr_in6 srcSockAddr6 = ConnectionID::mapIPv4ToIPv6(ipHeader->ip_src, ntohs(tcpHeader->th_sport));
     sockaddr_in6 destSockAddr6 = ConnectionID::mapIPv4ToIPv6(ipHeader->ip_dst, ntohs(tcpHeader->th_dport));
     ConnectionID expectedConnID(srcSockAddr6, destSockAddr6, Protocol::TCP);

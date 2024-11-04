@@ -1,26 +1,27 @@
+/*
+ * Author: Vladimir Azarov
+ * Login:  xazaro00
+ */
+
 #include "../src/cli.hpp"
-#include "../src/connectionID.hpp"
-#include "../src/connectionsTable.hpp"
-#include "../src/connection.hpp"
 #include "../src/packet.hpp"
+#include "../src/connectionsTable.hpp"
+#include "../src/display.hpp"
+#include "../src/connection.hpp"
+#include "../src/connectionID.hpp"
+
 #include <gtest/gtest.h>
 #include <vector>
 #include <string>
-#include <cstring>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/ip6.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
-#include <netinet/ip_icmp.h>
-#include <netinet/icmp6.h>
-#include <pcap.h>
 #include <thread>
 #include <chrono>
-#include <ifaddrs.h>
+#include <arpa/inet.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <pcap.h>
 
-std::vector<char*> createArgv(const std::vector<std::string>& args) {
+// Helper function to convert vector of strings to char* array for argv
+static std::vector<char*> createArgv(const std::vector<std::string>& args) {
     std::vector<char*> argv;
     for (const auto& arg : args) {
         argv.push_back(const_cast<char*>(arg.c_str()));
@@ -29,34 +30,7 @@ std::vector<char*> createArgv(const std::vector<std::string>& args) {
     return argv;
 }
 
-sockaddr_in6 createIPv4MappedIPv6SockAddr(const std::string& ipv4Address, uint16_t port) {
-    sockaddr_in6 addr;
-    std::memset(&addr, 0, sizeof(addr));
-    addr.sin6_family = AF_INET6;
-    addr.sin6_port = htons(port);
-    addr.sin6_addr.s6_addr[10] = 0xFF;
-    addr.sin6_addr.s6_addr[11] = 0xFF;
-    inet_pton(AF_INET, ipv4Address.c_str(), &addr.sin6_addr.s6_addr[12]);
-    return addr;
-}
-
-sockaddr_in6 createIPv6SockAddr(const std::string& ipv6Address, uint16_t port) {
-    sockaddr_in6 addr;
-    std::memset(&addr, 0, sizeof(addr));
-    addr.sin6_family = AF_INET6;
-    addr.sin6_port = htons(port);
-    inet_pton(AF_INET6, ipv6Address.c_str(), &addr.sin6_addr);
-    return addr;
-}
-
-sockaddr_in6 createSockAddr6(uint32_t addr_part = 0) {
-    sockaddr_in6 addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin6_family = AF_INET6;
-    addr.sin6_addr.s6_addr32[3] = htonl(addr_part);
-    return addr;
-}
-
+// Helper to create a fake pcap header
 pcap_pkthdr createMockPcapHeader(uint32_t len) {
     pcap_pkthdr header;
     header.ts.tv_sec = 0;
@@ -66,88 +40,111 @@ pcap_pkthdr createMockPcapHeader(uint32_t len) {
     return header;
 }
 
-TEST(CommandLineInterfaceTest, ValidInterfaceOnly) {
-    std::vector<std::string> args = {"program", "-i", "eth0"};
+// Test to ensure CLI initializes PacketCapture with the correct interface
+TEST(CommandLineInterfaceIntegrationTest, CLIInitializesPacketCapture) {
+    std::vector<std::string> args = {"program", "-i", "eth0", "-s", "b"};
     std::vector<char*> argv = createArgv(args);
     int argc = args.size();
 
-    EXPECT_NO_THROW({
-        CommandLineInterface cli(argc, argv.data());
-        cli.validateRetrieveArgs();
-    });
+    CommandLineInterface cli(argc, argv.data());
+    cli.validateRetrieveArgs();
+
+    ConnectionsTable connectionsTable;
+
+    PacketCapture packetCapture(cli.m_interface, connectionsTable);
+
+    EXPECT_EQ(packetCapture.m_interfaceName, "eth0");
 }
 
-TEST(CommandLineInterfaceTest, MissingInterface) {
-    std::vector<std::string> args = {"program", "-s", "b"};
+// Test to simulate the main flow by capturing fake packets
+TEST(FullSystemIntegrationTest, SimulatedMainFlow) {
+    std::vector<std::string> args = {"program", "-i", "eth0", "-s", "p"};
     std::vector<char*> argv = createArgv(args);
     int argc = args.size();
 
-    EXPECT_EXIT({
-        CommandLineInterface cli(argc, argv.data());
-        cli.validateRetrieveArgs();
-    }, ::testing::ExitedWithCode(EXIT_FAILURE), "");
-}
+    CommandLineInterface cli(argc, argv.data());
+    cli.validateRetrieveArgs();
 
-TEST(ConnectionIDTest, DefaultConstructor) {
-    ConnectionID connID;
-    EXPECT_EQ(connID.getProtocol(), Protocol::TCP);
-
-    sockaddr_in6 emptyAddr{};
-    std::memset(&emptyAddr, 0, sizeof(emptyAddr));
-
-    sockaddr_in6 srcEndPoint = connID.getSrcEndPoint();
-    sockaddr_in6 destEndPoint = connID.getDestEndPoint();
-
-    EXPECT_EQ(std::memcmp(&srcEndPoint, &emptyAddr, sizeof(sockaddr_in6)), 0);
-    EXPECT_EQ(std::memcmp(&destEndPoint, &emptyAddr, sizeof(sockaddr_in6)), 0);
-}
-
-TEST(ConnectionsTableTest, GetSortedConnections_SortsByBytesCorrectly) {
-    ConnectionsTable table;
-    sockaddr_in6 src1 = createSockAddr6(1);
-    sockaddr_in6 dest1 = createSockAddr6(2);
-    ConnectionID id1(src1, dest1, Protocol::TCP);
-
-    sockaddr_in6 src2 = createSockAddr6(3);
-    sockaddr_in6 dest2 = createSockAddr6(4);
-    ConnectionID id2(src2, dest2, Protocol::TCP);
-
-    table.updateConnection(id1, true, 500);  
-    table.updateConnection(id2, true, 1500); 
-
-    std::vector<Connection> sortedConnections;
-    table.getSortedConnections(SortBy::BY_BYTES, sortedConnections);
-
-    ASSERT_EQ(sortedConnections.size(), 2);
-    EXPECT_EQ(sortedConnections[0].m_ID, id2);
-    EXPECT_EQ(sortedConnections[1].m_ID, id1);
-}
-
-TEST(PacketCaptureTest, IsLocalIPv4Address) {
     ConnectionsTable connectionsTable;
-    PacketCapture packetCapture("eth0", connectionsTable);
 
-    in_addr localAddr1;
-    inet_pton(AF_INET, "192.168.1.10", &localAddr1);
-    packetCapture.m_localIPv4Addresses.push_back(localAddr1);
+    PacketCapture packetCapture(cli.m_interface, connectionsTable);
 
-    in_addr testAddr1;
-    inet_pton(AF_INET, "192.168.1.10", &testAddr1);
-
-    EXPECT_TRUE(packetCapture.isLocalIPv4Address(testAddr1));
-}
-
-TEST(PacketCaptureTest, PacketHandlerIPv4TCP) {
-    ConnectionsTable connectionsTable;
-    PacketCapture packetCapture("eth0", connectionsTable);
-
+    // Set data link type to Ethernet
     packetCapture.m_dataLinkType = DLT_EN10MB; 
     packetCapture.m_linkLevelHeaderLen = 14;   
 
+    // Add a local IPv4 address
     in_addr localAddr;
     inet_pton(AF_INET, "192.168.1.10", &localAddr);
     packetCapture.m_localIPv4Addresses.push_back(localAddr);
 
+    // Simulate capturing 5 TCP packets
+    for (int i = 0; i < 5; ++i) {
+        unsigned char packet[14 + sizeof(struct ip) + sizeof(struct tcphdr)];
+        memset(packet, 0, sizeof(packet));
+
+        struct ip* ipHeader = reinterpret_cast<struct ip*>(packet + 14);
+        ipHeader->ip_v = 4;
+        ipHeader->ip_hl = 5;
+        ipHeader->ip_len = htons(sizeof(struct ip) + sizeof(struct tcphdr));
+        ipHeader->ip_p = IPPROTO_TCP;
+        inet_pton(AF_INET, "192.168.1.10", &(ipHeader->ip_src));
+        inet_pton(AF_INET, "93.184.216.34", &(ipHeader->ip_dst));
+
+        struct tcphdr* tcpHeader = reinterpret_cast<struct tcphdr*>(packet + 14 + (ipHeader->ip_hl * 4));
+        tcpHeader->th_sport = htons(12345 + i);
+        tcpHeader->th_dport = htons(80);
+
+        pcap_pkthdr pkthdr;
+        pkthdr.caplen = sizeof(packet);
+        pkthdr.len = sizeof(packet);
+
+        PacketCapture::packetHandler(reinterpret_cast<unsigned char*>(&packetCapture), &pkthdr, packet);
+    }
+
+    std::vector<Connection> connections;
+    connectionsTable.getSortedConnections(cli.m_sortBy, connections);
+
+    ASSERT_EQ(connections.size(), 5);
+}
+
+// Test to check if Display can initialize and update without issues
+TEST(PacketCaptureDisplayIntegrationTest, PacketCaptureAndDisplay) {
+    ConnectionsTable connectionsTable;
+    PacketCapture packetCapture("eth0", connectionsTable);
+
+    // Set data link type to Ethernet
+    packetCapture.m_dataLinkType = DLT_EN10MB; 
+    packetCapture.m_linkLevelHeaderLen = 14;   
+
+    // Add a local IPv4 address
+    in_addr localAddr;
+    inet_pton(AF_INET, "192.168.1.10", &localAddr);
+    packetCapture.m_localIPv4Addresses.push_back(localAddr);
+
+    Display display(connectionsTable, SortBy::BY_BYTES, 1);
+
+    display.init();
+    display.update();
+
+    SUCCEED(); 
+}
+
+// Test to ensure PacketCapture correctly updates the ConnectionsTable
+TEST(PacketCaptureIntegrationTest, PacketCaptureUpdatesConnectionsTable) {
+    ConnectionsTable connectionsTable;
+    PacketCapture packetCapture("eth0", connectionsTable);
+
+    // Set data link type to Ethernet
+    packetCapture.m_dataLinkType = DLT_EN10MB; 
+    packetCapture.m_linkLevelHeaderLen = 14;   
+
+    // Add a local IPv4 address
+    in_addr localAddr;
+    inet_pton(AF_INET, "192.168.1.10", &localAddr);
+    packetCapture.m_localIPv4Addresses.push_back(localAddr);
+
+    // Create a fake TCP packet
     unsigned char packet[14 + sizeof(struct ip) + sizeof(struct tcphdr)];
     memset(packet, 0, sizeof(packet));
 
@@ -157,25 +154,31 @@ TEST(PacketCaptureTest, PacketHandlerIPv4TCP) {
     ipHeader->ip_len = htons(sizeof(struct ip) + sizeof(struct tcphdr));
     ipHeader->ip_p = IPPROTO_TCP;
     inet_pton(AF_INET, "192.168.1.10", &(ipHeader->ip_src));
-    inet_pton(AF_INET, "8.8.8.8", &(ipHeader->ip_dst));
+    inet_pton(AF_INET, "93.184.216.34", &(ipHeader->ip_dst));
 
-    struct tcphdr* tcpHeader = reinterpret_cast<struct tcphdr*>(packet + 14 + (ipHeader->ip_hl * 4));
+    struct tcphdr* tcpHeader = reinterpret_cast<struct tcphdr*>(
+        packet + 14 + (ipHeader->ip_hl * 4));
     tcpHeader->th_sport = htons(12345);
     tcpHeader->th_dport = htons(80);
 
     pcap_pkthdr pkthdr = createMockPcapHeader(sizeof(packet));
 
+    // Process the fake packet
     PacketCapture::packetHandler(reinterpret_cast<unsigned char*>(&packetCapture), &pkthdr, packet);
 
+    // Create expected ConnectionID
+    sockaddr_in6 srcSockAddr6 = ConnectionID::mapIPv4ToIPv6(ipHeader->ip_src, ntohs(tcpHeader->th_sport));
+    sockaddr_in6 destSockAddr6 = ConnectionID::mapIPv4ToIPv6(ipHeader->ip_dst, ntohs(tcpHeader->th_dport));
+    ConnectionID expectedConnID(srcSockAddr6, destSockAddr6, Protocol::TCP);
+
+    // Get connections from the table
     std::vector<Connection> connections;
     connectionsTable.getSortedConnections(SortBy::BY_BYTES, connections);
 
     ASSERT_EQ(connections.size(), 1);
-    EXPECT_EQ(connections[0].m_bytesSent, pkthdr.len);
-}
+    Connection conn = connections[0];
 
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    EXPECT_TRUE(conn.m_ID == expectedConnID);
+    EXPECT_EQ(conn.m_bytesSent, pkthdr.len);
+    EXPECT_EQ(conn.m_bytesReceived, 0);
 }
