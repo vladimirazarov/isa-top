@@ -1,10 +1,10 @@
-# isa-top
+# conntop
 
 A console application to display current network transfer speeds for communicating IP addresses in real-time.
 
 ## Description
 
-`isa-top` monitors network traffic on a specified interface using `libpcap` and displays connection statistics in the terminal using `ncurses`. It uses a multi-threaded approach for packet capture and display updates.
+`conntop` monitors network traffic on a specified interface using `libpcap` and displays connection statistics in the terminal using `ncurses`. It uses a multi-threaded approach for packet capture and display updates.
 
 ## Building
 
@@ -17,7 +17,7 @@ make
 Run with root privileges:
 
 ```bash
-sudo ./isa-top -i <interface> [-s <sort_by>] [-l]
+sudo ./conntop -i <interface> [-s <sort_by>] [-l]
 ```
 
 *   `-i <interface>`: Network interface to capture packets from (required).
@@ -44,5 +44,5 @@ make integration_tests
 *   `test/`: Unit and integration tests.
 *   `Makefile`: Build script.
 *   `manual.pdf`: Detailed documentation (in Czech).
-*   `isa-top.1`: Man page.
+*   `conntop.1`: Man page.
 *   `LICENSE`: Project license. 
